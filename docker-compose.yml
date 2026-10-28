@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fsp
+      POSTGRES_PASSWORD: fsp
+      POSTGRES_DB: fsp
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fsp"]
+      interval: 3s
+      retries: 20
+  api:
+    build: ./backend
+    environment:
+      FSP_DATABASE_URL: postgresql+psycopg://fsp:fsp@db:5432/fsp
+    depends_on:
+      db:
+        condition: service_healthy
+    ports: ["8000:8000"]
+  web:
+    build: ./frontend
+    environment:
+      VITE_API_URL: http://api:8000
+    depends_on: [api]
+    ports: ["5173:5173"]

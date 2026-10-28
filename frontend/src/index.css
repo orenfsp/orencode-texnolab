@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { @apply bg-field text-ink font-sans antialiased; font-feature-settings: "tnum" 1; }
+  h1, h2, h3 { @apply font-display font-extrabold text-ink; letter-spacing: -0.015em; text-wrap: balance; }
+  
+  ::selection { @apply bg-fed text-white; }
+  input, textarea { caret-color: theme("colors.fed.DEFAULT"); }
+  html { scrollbar-color: theme("colors.plum.DEFAULT / 35%") transparent; }
+  a { text-underline-offset: 3px; }
+  :focus-visible { @apply outline outline-2 outline-offset-2 outline-fed; }
+  a { @apply text-fed hover:text-fed-dark; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+}
+
+@layer components {
+  
+  .cut-tr { clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
+  .cut-br { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%); }
+
+  .btn { @apply inline-flex items-center justify-center gap-2 whitespace-nowrap px-5 py-2.5 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply btn cut-tr bg-fed text-white hover:bg-fed-dark hover:text-white; }
+  .btn-secondary { @apply btn border-2 border-line bg-white text-plum hover:border-fed hover:text-plum; }
+  .btn-quiet { @apply btn px-2 py-1.5 font-semibold text-fed hover:bg-fed-tint; }
+  .btn-danger { @apply btn border-2 border-danger/40 bg-white text-danger hover:bg-danger/5; }
+  .btn-sm { @apply px-3 py-1.5 text-xs; }
+  .input { @apply w-full border-2 border-line bg-white px-4 py-2.5 text-[0.9375rem] font-medium text-ink placeholder:text-ink-muted/70 focus:border-fed focus:outline-none; }
+  .label { @apply mb-1.5 block text-sm font-semibold text-ink-muted; }
+  .hint { @apply mt-1.5 text-xs text-ink-muted; }
+  .panel { @apply cut-br bg-white p-6 sm:p-8; }
+  
+  .tile { @apply cut-br bg-white px-5 py-4; }
+  
+  .proto { @apply min-w-full border-collapse text-[0.9375rem]; }
+  .proto th { @apply border-b-2 border-plum px-3 pb-2.5 pt-1 text-left text-sm font-bold text-ink-muted; }
+  .proto td { @apply border-b border-line px-3 py-3.5 align-middle; }
+  .proto tbody tr:hover td { @apply bg-field/70; }
+  .num { @apply font-display font-bold tabular-nums; }
+}

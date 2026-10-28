@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Тестовый клиент ФСП ID</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 48px auto; padding: 0 16px; color: #0e1a3a; background: #f6f7f9; }
+    h1 { font-size: 22px; }
+    p { line-height: 1.5; }
+    button { font: inherit; font-weight: 600; padding: 12px 20px; border-radius: 8px; border: 0; background: #2453ff; color: #fff; cursor: pointer; }
+    button:focus-visible { outline: 3px solid #0e1a3a; outline-offset: 2px; }
+    pre { background: #fff; border: 1px solid #d8dde6; border-radius: 8px; padding: 16px; overflow-x: auto; font-size: 13px; }
+    .err { color: #c2410c; }
+  </style>
+</head>
+<body>
+  <h1>Портал «Олимпиады Оренбуржья»</h1>
+  <p>Это тестовое внешнее приложение. Оно не хранит пароли: вход выполняется через региональный ФСП ID
+     (OpenID Connect, authorization code + PKCE).</p>
+  <button id="login">Войти через ФСП ID</button>
+  <div id="out"></div>
+  <script>
+    const CLIENT_ID = "demo-client";
+    const ISSUER = location.origin;
+    const REDIRECT = ISSUER + "/demo-client/";
+    const out = document.getElementById("out");
+
+    const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    const random = (n) => b64url(crypto.getRandomValues(new Uint8Array(n)));
+
+    document.getElementById("login").onclick = async () => {
+      const verifier = random(48), state = random(16), nonce = random(16);
+      sessionStorage.setItem("pkce", JSON.stringify({ verifier, state }));
+      const challenge = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+      const q = new URLSearchParams({
+        response_type: "code", client_id: CLIENT_ID, redirect_uri: REDIRECT, scope: "openid profile email roles sport",
+        state, nonce, code_challenge: challenge, code_challenge_method: "S256",
+      });
+      location.href = `${ISSUER}/oauth/authorize?${q}`;
+    };
+
+    (async () => {
+      const p = new URLSearchParams(location.search);
+      if (p.get("error")) { out.textContent = "Вход отменён: " + p.get("error"); return; }
+      const code = p.get("code");
+      if (!code) return;
+      const saved = JSON.parse(sessionStorage.getItem("pkce") || "{}");
+      if (saved.state !== p.get("state")) { out.innerHTML = '<p class="err">Неверный state</p>'; return; }
+      const tok = await fetch(`${ISSUER}/oauth/token`, {
+        method: "POST",
+        body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: REDIRECT, client_id: CLIENT_ID, code_verifier: saved.verifier }),
+      }).then((r) => r.json());
+      if (!tok.access_token) { out.textContent = tok.error_description; return; }
+      const info = await fetch(`${ISSUER}/oauth/userinfo`, { headers: { Authorization: `Bearer ${tok.access_token}` } }).then((r) => r.json());
+      history.replaceState(null, "", REDIRECT);
+      const h = Object.assign(document.createElement("h2"), { textContent: `Здравствуйте, ${info.given_name ?? "участник"}!` });
+      const note = Object.assign(document.createElement("p"), { textContent: "Данные, полученные от ФСП ID (userinfo):" });
+      const pre = Object.assign(document.createElement("pre"), { textContent: JSON.stringify(info, null, 2) });
+      out.replaceChildren(h, note, pre);
+    })();
+  </script>
+</body>
+</html>
